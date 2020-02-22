@@ -19,8 +19,13 @@ namespace Disquiet.Core.SoundVisualization
         // In a later build, repace TestGrid with another Grid type
         // TestGrid is for debugging purposes now
         public TestGrid SampleGrid { get; private set; }
-        public Vector3 GridCellSize;
-        public Vector3Int GridDimension;
+        public Vector3 GridCellSize = new Vector3(1, 1, 1);
+        public Vector3Int GridDimension = new Vector3Int(10, 10, 10);
+
+        /// <summary>
+        /// Sound intensity rendered to 3D texture with respect to world position
+        /// </summary>
+        public Texture3D SoundTexture { get; private set; }
 
         public GameObject Player;
 
@@ -40,7 +45,9 @@ namespace Disquiet.Core.SoundVisualization
 
         private void Update()
         {
-            SampleGrid.Refresh(Player.transform.position);
+            // For debug purposes, use the vector (0,0,0)
+            SampleGrid.Refresh(Vector3.zero);
+            //SampleGrid.Refresh(Player.transform.position);
 
             // Refresh vertexSamples
             vertexSamples = new List<VertexSample>();
@@ -51,6 +58,35 @@ namespace Disquiet.Core.SoundVisualization
                 sample.Intensity = soundSampler.Evaluate(vert);
                 vertexSamples.Add(sample);
             }
+
+            // Render to texture
+            SoundTexture = RenderToBlueDebugTexture();
+        }
+
+        private Texture3D RenderSoundToTexture()
+        {
+            throw new System.NotImplementedException();
+        }
+
+        /// <summary>
+        /// A debug function to test 3D texture generation
+        /// Delete when obsolete
+        /// </summary>
+        private Texture3D RenderToBlueDebugTexture()
+        {
+            Texture3D tex = new Texture3D(256, 256, 256, TextureFormat.RGBA32, true );
+            for(int x = 0; x< tex.width; x++)
+            {
+                for(int y = 0; y< tex.height; y++)
+                {
+                    for(int z = 0; z < tex.depth; z++)
+                    {
+                        tex.SetPixel(x, y, z, Color.blue);
+                    }
+                }
+            }
+            tex.Apply();
+            return tex;
         }
     }
 }
