@@ -20,6 +20,7 @@ namespace Disquiet.Core.SoundVisualization
         void Update()
         {
             renderer.material.SetTexture("_MainTex", sampler.SoundTexture);
+            renderer.material.SetVector("_GridSize", sampler.GridTotalSize);
         }
     }
 }

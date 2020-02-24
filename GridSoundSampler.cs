@@ -6,10 +6,6 @@ namespace Disquiet.Core.SoundVisualization
 {
     class GridSoundSampler : MonoBehaviour
     {
-        // The main goal is to refresh vertexSamples on every Update()
-        // We will figure a way to ship the data in vertexSamples into the shader
-
-
         /// <summary>
         /// Sound sampler used to evaluate intensity value at sample points
         /// </summary>
@@ -21,11 +17,12 @@ namespace Disquiet.Core.SoundVisualization
         public TestGrid SampleGrid { get; private set; }
         public Vector3 GridCellSize = new Vector3(1, 1, 1);
         public Vector3Int GridDimension = new Vector3Int(10, 10, 10);
+        public Vector3 GridTotalSize { get; private set; }
 
         /// <summary>
         /// Sound intensity rendered to 3D texture with respect to world position
         /// </summary>
-        public Texture3D SoundTexture { get; private set; }
+        public Texture3D SoundTexture;
 
         public GameObject Player;
 
@@ -34,13 +31,17 @@ namespace Disquiet.Core.SoundVisualization
             public Vector3 Vertex;
             public float Intensity;
         }
-        private List<VertexSample> vertexSamples;
+        private VertexSample[,,] vertexSamples;
 
         private void Start()
         {
+            VerifyGrid();
             soundSampler = SoundSamplerObj.GetComponent<SoundSampler>();
             SampleGrid = new TestGrid(GridCellSize, GridDimension);
-            vertexSamples = new List<VertexSample>();
+            GridTotalSize = new Vector3(
+                GridCellSize.x * (GridDimension.x - 1),
+                GridCellSize.y * (GridDimension.y - 1),
+                GridCellSize.z * (GridDimension.z - 1));
         }
 
         private void Update()
@@ -50,43 +51,85 @@ namespace Disquiet.Core.SoundVisualization
             //SampleGrid.Refresh(Player.transform.position);
 
             // Refresh vertexSamples
-            vertexSamples = new List<VertexSample>();
-            foreach(Vector3 vert in SampleGrid.Vertex)
+            vertexSamples = new VertexSample[GridDimension.x, GridDimension.y, GridDimension.z];
+            for (int x = 0; x < GridDimension.x; x++)
             {
-                VertexSample sample = new VertexSample();
-                sample.Vertex = vert;
-                sample.Intensity = soundSampler.Evaluate(vert);
-                vertexSamples.Add(sample);
-            }
-
-            // Render to texture
-            SoundTexture = RenderToBlueDebugTexture();
-        }
-
-        private Texture3D RenderSoundToTexture()
-        {
-            throw new System.NotImplementedException();
-        }
-
-        /// <summary>
-        /// A debug function to test 3D texture generation
-        /// Delete when obsolete
-        /// </summary>
-        private Texture3D RenderToBlueDebugTexture()
-        {
-            Texture3D tex = new Texture3D(256, 256, 256, TextureFormat.RGBA32, true );
-            for(int x = 0; x< tex.width; x++)
-            {
-                for(int y = 0; y< tex.height; y++)
+                for (int y = 0; y < GridDimension.y; y++)
                 {
-                    for(int z = 0; z < tex.depth; z++)
+                    for (int z = 0; z < GridDimension.z; z++)
                     {
-                        tex.SetPixel(x, y, z, Color.blue);
+                        VertexSample vertexSample = new VertexSample();
+                        vertexSample.Vertex = SampleGrid.Vertex[x, y, z];
+                        vertexSample.Intensity = soundSampler.Evaluate(vertexSample.Vertex);
+                        vertexSamples[x, y, z] = vertexSample;
                     }
                 }
             }
-            tex.Apply();
-            return tex;
+
+            // Render to texture
+            SoundTexture = RenderSoundToTexture();
+            //SoundTexture = RenderDebugTexture();
+        }
+
+        /// <summary>
+        /// Check if the GridCellSize or GridDimension contains a non-positive entry
+        /// Program crashes loud and clear if that is the case
+        /// </summary>
+        private void VerifyGrid()
+        {
+            if(GridDimension.x <=0 || GridDimension.y <= 0 || GridDimension.z <= 0 || GridCellSize.x <= 0 || GridCellSize.y <= 0 || GridCellSize.z <= 0)
+            {
+                throw new System.Exception("Non-positive grid entry");
+            }
+        }
+
+        /// <summary>
+        /// Gather the information sampled form the grid and render it to a 3D Texture
+        /// </summary>
+        private Texture3D RenderSoundToTexture()
+        {
+            // Inline style method. Takes no parameter, use global variables instead.
+
+            Texture3D soundTex3D = new Texture3D(GridDimension.x, GridDimension.y, GridDimension.z, TextureFormat.RGBA32, true);
+            for(int x = 0; x < soundTex3D.width; x++)
+            {
+                for(int y = 0; y < soundTex3D.height; y++)
+                {
+                    for(int z = 0; z < soundTex3D.depth; z++)
+                    {
+                        float intensity = vertexSamples[x, y, z].Intensity;
+                        intensity *= 10;
+                        Color soundColor = new Color(intensity, intensity, intensity,1);
+                        soundTex3D.SetPixel(x, y, z, soundColor);
+                    }
+                }
+            }
+            soundTex3D.Apply();
+            return soundTex3D;
+        }
+
+        private Texture3D RenderDebugTexture()
+        {
+            Texture3D debugTex3D = new Texture3D(GridDimension.x, GridDimension.y, GridDimension.z, TextureFormat.RGBA32, true);
+            for (int x = 0; x < debugTex3D.width; x++)
+            {
+                for (int y = 0; y < debugTex3D.height; y++)
+                {
+                    for (int z = 0; z < debugTex3D.depth; z++)
+                    {
+                        if(x % 2 == 0)
+                        {
+                            debugTex3D.SetPixel(x, y, z, Color.black);
+                        }
+                        else
+                        {
+                            debugTex3D.SetPixel(x, y, z, Color.white);
+                        }
+                    }
+                }
+            }
+            debugTex3D.Apply();
+            return debugTex3D;
         }
     }
 }

@@ -3,6 +3,7 @@
     Properties
     {
         _MainTex("Albedo", 3D) = "white" {}
+        _GridSize("Total Grid Size",Vector) = (1,1,1)
     }
         SubShader
     {
@@ -19,6 +20,7 @@
             #include "UnityCG.cginc"
 
             sampler3D _MainTex;
+            float3 _GridSize;
 
             struct appdata
             {
@@ -39,10 +41,13 @@
                 return o;
             }
 
-            fixed4 frag (v2f i) : SV_Target
+            fixed4 frag(v2f i) : SV_Target
             {
-                // sample the texture
-                fixed4 col = tex3D(_MainTex, i.worldPos);
+                // Normalize the world position regarding the grid
+                // Some space to optimize, replace "/x" with "* (1/x)" approach
+                float4 uvw = float4(i.worldPos.x / _GridSize.x, i.worldPos.y / _GridSize.y, i.worldPos.z / _GridSize.z, 1);
+                // sample the sound texture
+                fixed4 col = tex3D(_MainTex, uvw);
                 return col;
             }
             ENDCG

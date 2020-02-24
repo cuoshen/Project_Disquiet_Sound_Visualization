@@ -24,7 +24,7 @@ namespace Disquiet.Core.SoundVisualization
         /// <summary>
         /// Positions for each vertex
         /// </summary>
-        public List<Vector3> Vertex { get; private set; }
+        public Vector3[,,] Vertex { get; private set; }
 
         public Vector3 center;
 
@@ -42,23 +42,22 @@ namespace Disquiet.Core.SoundVisualization
             Debug.Log("Grid refreshed");
         }
 
-        private List<Vector3> InitializeVertexPosition()
+        private Vector3[,,] InitializeVertexPosition()
         {
-            List<Vector3> vertexPosition = new List<Vector3>();
-            for(int i = 0; i< GridDimension.x; i++)
+            Vector3[,,] vertexPosition = new Vector3[GridDimension.x, GridDimension.y, GridDimension.z];
+            for(int x = 0; x< GridDimension.x; x++)
             {
-                for (int j= 0; j < GridDimension.y; j++)
+                for (int y= 0; y < GridDimension.y; y++)
                 {
-                    for (int k = 0; k < GridDimension.z; k++)
+                    for (int z = 0; z < GridDimension.z; z++)
                     {
                         Vector3 vert = new Vector3(
-                            i * CellDimension.x,
-                            j * CellDimension.y,
-                            k * CellDimension.z
+                            x * CellDimension.x,
+                            y * CellDimension.y,
+                            z * CellDimension.z
                             ) ;
                         vert += center;
-                        Debug.Log("Grid vertex at " + vert.ToString());
-                        vertexPosition.Add(vert);
+                        vertexPosition[x, y, z] = vert;
                     }
                 }
             }
